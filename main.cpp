@@ -8,20 +8,26 @@
 #include <imgui_impl_sdlgpu3.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 
 #include "config.h"
 #include "shader.hpp"
 
-static constexpr float kFov = 1.0f;
-static constexpr float kNear = 0.1f;
-static constexpr float kFar = 1000.0f;
 static constexpr float kPan = 0.002f;
-static constexpr float kZoom = 20.0f;
+static constexpr float kZoom = 25.0e9f;
+static constexpr float kFov = glm::radians<float>(60.0f);
 
 struct UniformBuffer
 {
-
+    glm::vec3 CameraPosition;
+    float TanHalfFov;
+    glm::vec3 CameraRight;
+    float Aspect;
+    glm::vec3 CameraUp;
+    float Padding0;
+    glm::vec3 CameraForward;
+    float Padding1;
 };
 
 static SDL_Window* window;
@@ -30,7 +36,7 @@ static SDL_GPUComputePipeline* geodesicPipeline;
 static SDL_GPUTexture* colorTexture;
 static float pitch;
 static float yaw;
-static float distance{256.0f};
+static float distance{1.0e11f};
 static UniformBuffer uniformBuffer;
 
 static bool Init()
@@ -125,6 +131,18 @@ static void Draw()
         return;
     }
     {
+        uniformBuffer.CameraUp = glm::vec3{0.0f, 1.0f, 0.0f};
+        uniformBuffer.TanHalfFov = std::tan(kFov * 0.5f);
+        uniformBuffer.Aspect = float(WIDTH) / HEIGHT;
+        uniformBuffer.CameraForward.x = std::cos(pitch) * std::cos(yaw);
+        uniformBuffer.CameraForward.y = std::sin(pitch);
+        uniformBuffer.CameraForward.z = std::cos(pitch) * std::sin(yaw);
+        uniformBuffer.CameraForward = glm::normalize(uniformBuffer.CameraForward);
+        uniformBuffer.CameraPosition = -uniformBuffer.CameraForward * distance;
+        uniformBuffer.CameraRight = glm::cross(uniformBuffer.CameraForward, uniformBuffer.CameraUp);
+        uniformBuffer.CameraRight = glm::normalize(uniformBuffer.CameraRight);
+    }
+    {
         SDL_GPUStorageTextureReadWriteBinding readWriteTexture{};
         readWriteTexture.texture = colorTexture;
         SDL_GPUComputePass* computePass = SDL_BeginGPUComputePass(commandBuffer, &readWriteTexture, 1, nullptr, 0);
@@ -137,6 +155,7 @@ static void Draw()
         int groupsX = (WIDTH + THREADS - 1) / THREADS;
         int groupsY = (HEIGHT + THREADS - 1) / THREADS;
         SDL_BindGPUComputePipeline(computePass, geodesicPipeline);
+        SDL_PushGPUComputeUniformData(commandBuffer, 0, &uniformBuffer, sizeof(uniformBuffer));
         SDL_DispatchGPUCompute(computePass, groupsX, groupsY, 1);
         SDL_EndGPUComputePass(computePass);
     }
@@ -215,6 +234,7 @@ int main(int argc, char** argv)
         }
         Draw();
     }
+    SDL_HideWindow(window);
     ImGui_ImplSDLGPU3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();

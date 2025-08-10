@@ -3,17 +3,84 @@
 [[vk::image_format("rgba8")]]
 RWTexture2D<float4> outImage : register(u0, space1);
 
-cbuffer UniformBuffer : register(b1)
+cbuffer UniformBuffer : register(b0, space2)
 {
-    float3 cameraPosition;
-    float tanHalfFov;
-    float3 cameraRight;
-    float aspect;
-    float3 cameraUp;
-    float padding0;
-    float3 cameraForward;
-    float padding1;
+    float3 CameraPosition;
+    float TanHalfFov;
+    float3 CameraRight;
+    float Aspect;
+    float3 CameraUp;
+    float Padding0;
+    float3 CameraForward;
+    float Padding1;
 };
+
+struct Ray
+{
+    float3 Position;
+    float R;
+    float Theta;
+    float Phi;
+    float Dr;
+    float Dtheta;
+    float Dphi;
+    float E;
+    float L;
+};
+
+static const float kBlackHoleRadius = 1.269e10f; /* Sagittarius A */
+static const float kLambda = 1.0e7f;
+static const int kSteps = 60000;
+
+Ray CreateRay(float3 position, float3 direction)
+{
+    Ray ray;
+    ray.Position = position;
+    ray.R = length(position);
+    ray.Theta = acos(position.z / ray.R);
+    ray.Phi = atan2(position.y, position.x);
+    float dx = direction.x;
+    float dy = direction.y;
+    float dz = direction.z;
+    ray.Dr =
+        sin(ray.Theta) * cos(ray.Phi) * dx +
+        sin(ray.Theta) * sin(ray.Phi) * dy +
+        cos(ray.Theta) * dz;
+    ray.Dtheta = (
+        cos(ray.Theta) * cos(ray.Phi) * dx +
+        cos(ray.Theta) * sin(ray.Phi) * dy -
+        sin(ray.Theta) * dz) / ray.R;
+    ray.Dphi = (-sin(ray.Phi) * dx + cos(ray.Phi) * dy) / (ray.R * sin(ray.Theta));
+    ray.L = ray.R * ray.R * sin(ray.Theta) * ray.Dphi;
+    float f = 1.0f - kBlackHoleRadius / ray.R;
+    float dL =
+        sqrt((ray.Dr * ray.Dr) / f +
+        ray.R * ray.R * (ray.Dtheta * ray.Dtheta +
+        sin(ray.Theta) * sin(ray.Theta) * ray.Dphi * ray.Dphi));
+    ray.E = f * dL;
+    return ray;
+}
+
+void Rk4Step(inout Ray ray, float dL)
+{
+    float3 k1a = CameraForward;
+    float3 k1b = CameraForward;
+
+    // float3 k1a;
+    // float3 k1b;
+    // GeodesicRHS(ray, k1a, k1b);
+
+    ray.R      += dL * k1a.x;
+    ray.Theta  += dL * k1a.y;
+    ray.Phi    += dL * k1a.z;
+    ray.Dr     += dL * k1b.x;
+    ray.Dtheta += dL * k1b.y;
+    ray.Dphi   += dL * k1b.z;
+
+    ray.Position.x = ray.R * sin(ray.Theta) * cos(ray.Phi);
+    ray.Position.y = ray.R * sin(ray.Theta) * sin(ray.Phi);
+    ray.Position.z = ray.R * cos(ray.Theta);
+}
 
 [numthreads(THREADS, THREADS, 1)]
 void main(uint3 id : SV_DispatchThreadID)
@@ -21,6 +88,21 @@ void main(uint3 id : SV_DispatchThreadID)
     if (id.x >= WIDTH || id.y >= HEIGHT)
     {
         return;
+    }
+    float u = (2.0f * (id.x + 0.5f) / WIDTH - 1.0f) * Aspect * TanHalfFov;
+    float v = (1.0f - 2.0f * (id.y + 0.5f) / HEIGHT) * TanHalfFov;
+    float3 direction = normalize(u * CameraRight - v * CameraUp + CameraForward);
+    Ray ray = CreateRay(CameraPosition, direction);
+    for (int i = 0; i < kSteps; i++)
+    {
+        // if (ray.R <= kBlackHoleRadius)
+        if (length(ray.Position) <= kBlackHoleRadius)
+        {
+            outImage[id.xy] = float4(0.0f, 0.0f, 0.0f, 1.0f);
+            return;
+        }
+        // Rk4Step(ray, kLambda);
+        ray.Position += direction * kLambda;
     }
     outImage[id.xy] = float4(1.0f, 1.0f, 1.0f, 1.0f);
 }

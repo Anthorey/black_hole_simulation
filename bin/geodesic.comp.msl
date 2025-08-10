@@ -3,20 +3,63 @@
 
 using namespace metal;
 
-kernel void main0(texture2d<float, access::write> outImage [[texture(0)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
+struct type_UniformBuffer
+{
+    packed_float3 CameraPosition;
+    float TanHalfFov;
+    packed_float3 CameraRight;
+    float Aspect;
+    packed_float3 CameraUp;
+    float Padding0;
+    packed_float3 CameraForward;
+    float Padding1;
+};
+
+kernel void main0(constant type_UniformBuffer& UniformBuffer [[buffer(0)]], texture2d<float, access::write> outImage [[texture(0)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
 {
     do
     {
-        bool _38;
+        bool _58;
         if (!(gl_GlobalInvocationID.x >= 960u))
         {
-            _38 = gl_GlobalInvocationID.y >= 720u;
+            _58 = gl_GlobalInvocationID.y >= 720u;
         }
         else
         {
-            _38 = true;
+            _58 = true;
         }
-        if (_38)
+        if (_58)
+        {
+            break;
+        }
+        float3 _88 = fast::normalize(((float3(UniformBuffer.CameraRight) * (((((float(gl_GlobalInvocationID.x) + 0.5) * 0.00208333344198763370513916015625) - 1.0) * UniformBuffer.Aspect) * UniformBuffer.TanHalfFov)) - (float3(UniformBuffer.CameraUp) * ((1.0 - ((float(gl_GlobalInvocationID.y) + 0.5) * 0.00277777784503996372222900390625)) * UniformBuffer.TanHalfFov))) + float3(UniformBuffer.CameraForward));
+        float3 _92;
+        _92 = float3(UniformBuffer.CameraPosition);
+        float3 _93;
+        bool _107;
+        int _95 = 0;
+        for (;;)
+        {
+            if (_95 < 60000)
+            {
+                if (length(_92) <= 12689999872.0)
+                {
+                    outImage.write(float4(0.0, 0.0, 0.0, 1.0), uint2(gl_GlobalInvocationID.xy));
+                    _107 = true;
+                    break;
+                }
+                _93 = _92 + (_88 * 10000000.0);
+                _92 = _93;
+                _95++;
+                continue;
+            }
+            else
+            {
+                _107 = false;
+                break;
+            }
+        }
+        if (_107)
         {
             break;
         }
