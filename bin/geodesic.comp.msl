@@ -1,0 +1,27 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+kernel void main0(texture2d<float, access::write> outImage [[texture(0)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
+{
+    do
+    {
+        bool _38;
+        if (!(gl_GlobalInvocationID.x >= 960u))
+        {
+            _38 = gl_GlobalInvocationID.y >= 720u;
+        }
+        else
+        {
+            _38 = true;
+        }
+        if (_38)
+        {
+            break;
+        }
+        outImage.write(float4(1.0), uint2(gl_GlobalInvocationID.xy));
+        break;
+    } while(false);
+}
+

@@ -1,0 +1,26 @@
+#include "config.h"
+
+[[vk::image_format("rgba8")]]
+RWTexture2D<float4> outImage : register(u0, space1);
+
+cbuffer UniformBuffer : register(b1)
+{
+    float3 cameraPosition;
+    float tanHalfFov;
+    float3 cameraRight;
+    float aspect;
+    float3 cameraUp;
+    float padding0;
+    float3 cameraForward;
+    float padding1;
+};
+
+[numthreads(THREADS, THREADS, 1)]
+void main(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= WIDTH || id.y >= HEIGHT)
+    {
+        return;
+    }
+    outImage[id.xy] = float4(1.0f, 1.0f, 1.0f, 1.0f);
+}
