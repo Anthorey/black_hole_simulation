@@ -38,7 +38,7 @@ struct Object
 RWTexture2D<float4> outImage : register(u0, space1);
 StructuredBuffer<Object> objects : register(t0, space0);
 
-static const float kBlackHoleRadius = 1.269e10f; /* Sagittarius A */
+static const float kBlackHoleRadius = 1.269e10f;
 static const float kLambda = 1.0e7f;
 static const int kSteps = 60000;
 static const float kEscape = 1.0e30f;
@@ -64,15 +64,15 @@ Ray CreateRay(float3 position, float3 direction)
     ray.Dphi = (-sin(ray.Phi) * dx + cos(ray.Phi) * dy) / (ray.R * sin(ray.Theta));
     ray.L = ray.R * ray.R * sin(ray.Theta) * ray.Dphi;
     float f = 1.0f - kBlackHoleRadius / ray.R;
-    float dt_dL =
+    float dl =
         sqrt((ray.Dr * ray.Dr) / f +
         ray.R * ray.R * (ray.Dtheta * ray.Dtheta +
         sin(ray.Theta) * sin(ray.Theta) * ray.Dphi * ray.Dphi));
-    ray.E = f * dt_dL;
+    ray.E = f * dl;
     return ray;
 }
 
-void GeodesicRHS(Ray ray, out float3 d1, out float3 d2)
+void Step(inout Ray ray)
 {
     float r = ray.R;
     float theta = ray.Theta;
@@ -80,27 +80,20 @@ void GeodesicRHS(Ray ray, out float3 d1, out float3 d2)
     float dtheta = ray.Dtheta;
     float dphi = ray.Dphi;
     float f = 1.0f - kBlackHoleRadius / r;
-    float dt_dL = ray.E / f;
-    d1 = float3(dr, dtheta, dphi);
+    float dl = ray.E / f;
+    float3 d2;
     d2.x = -
-        (kBlackHoleRadius / (2.0f * r * r)) * f * dt_dL * dt_dL +
+        (kBlackHoleRadius / (2.0f * r * r)) * f * dl * dl +
         (kBlackHoleRadius / (2.0f * r * r * f)) * dr * dr +
         r * (dtheta * dtheta + sin(theta) * sin(theta) * dphi * dphi);
     d2.y = -2.0f * dr * dtheta / r + sin(theta) * cos(theta) * dphi * dphi;
     d2.z = -2.0f * dr * dphi / r - 2.0f * cos(theta) / sin(theta) * dtheta * dphi;
-}
-
-void Step(inout Ray ray, float dL)
-{
-    float3 k1a;
-    float3 k1b;
-    GeodesicRHS(ray, k1a, k1b);
-    ray.R += dL * k1a.x;
-    ray.Theta += dL * k1a.y;
-    ray.Phi += dL * k1a.z;
-    ray.Dr += dL * k1b.x;
-    ray.Dtheta += dL * k1b.y;
-    ray.Dphi += dL * k1b.z;
+    ray.R += kLambda * dr;
+    ray.Theta += kLambda * dtheta;
+    ray.Phi += kLambda * dphi;
+    ray.Dr += kLambda * d2.x;
+    ray.Dtheta += kLambda * d2.y;
+    ray.Dphi += kLambda * d2.z;
     ray.Position.x = ray.R * sin(ray.Theta) * cos(ray.Phi);
     ray.Position.y = ray.R * sin(ray.Theta) * sin(ray.Phi);
     ray.Position.z = ray.R * cos(ray.Theta);
@@ -126,7 +119,7 @@ void main(uint3 id : SV_DispatchThreadID)
             return;
         }
         float3 position = ray.Position;
-        Step(ray, kLambda);
+        Step(ray);
         nearest -= distance(position, ray.Position);
         float r = length(float2(ray.Position.x, ray.Position.z));
         if (position.y * ray.Position.y < 0.0f && r >= DiskR1 && r <= DiskR2)

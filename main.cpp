@@ -16,7 +16,7 @@ static constexpr float kZoom = 25.0e9f;
 static constexpr float kFov = glm::radians<float>(60.0f);
 static constexpr float kC = 299792458.0f;
 static constexpr float kG = 6.67430e-11f;
-static constexpr float kBlackHoleMass = 8.54e36f; /* Sagittarius A */
+static constexpr float kBlackHoleMass = 8.54e36f;
 static constexpr float kBlackHoleRadius = 2.0f * kG * kBlackHoleMass / (kC * kC);
 
 struct UniformBuffer
@@ -66,7 +66,7 @@ static bool Init()
         return false;
     }
 #if defined(SDL_PLATFORM_WIN32)
-    device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, false, nullptr);
+    device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_DXIL, true, nullptr);
 #elif defined(SDL_PLATFORM_APPLE)
     device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_MSL, true, nullptr);
 #else
@@ -158,6 +158,7 @@ static bool Init()
         region.size = uniformBuffer.ObjectCount * sizeof(Object);
         SDL_UploadToGPUBuffer(copyPass, &location, &region, false);
     }
+    SDL_ReleaseGPUTransferBuffer(device, transferBuffer);
     SDL_EndGPUCopyPass(copyPass);
     SDL_SubmitGPUCommandBuffer(commandBuffer);
     return true;
