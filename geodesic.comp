@@ -1,8 +1,5 @@
 #include "config.h"
 
-[[vk::image_format("rgba8")]]
-RWTexture2D<float4> outImage : register(u0, space1);
-
 cbuffer UniformBuffer : register(b0, space2)
 {
     float3 CameraPosition;
@@ -13,6 +10,7 @@ cbuffer UniformBuffer : register(b0, space2)
     float Padding0;
     float3 CameraForward;
     float Padding1;
+    uint ObjectCount;
 };
 
 struct Ray
@@ -27,6 +25,18 @@ struct Ray
     float E;
     float L;
 };
+
+struct Object
+{
+    float3 Position;
+    float Radius;
+    float3 Color;
+    float Mass;
+};
+
+[[vk::image_format("rgba8")]]
+RWTexture2D<float4> outImage : register(u0, space1);
+StructuredBuffer<Object> objects : register(t0, space0);
 
 static const float kBlackHoleRadius = 1.269e10f; /* Sagittarius A */
 static const float kLambda = 1.0e7f;
@@ -71,14 +81,15 @@ void GeodesicRHS(Ray ray, out float3 d1, out float3 d2)
     float f = 1.0f - kBlackHoleRadius / r;
     float dt_dL = ray.E / f;
     d1 = float3(dr, dtheta, dphi);
-    d2.x =
-        -(kBlackHoleRadius / (2.0f * r * r)) * f * dt_dL * dt_dL +
+    d2.x = -
+        (kBlackHoleRadius / (2.0f * r * r)) * f * dt_dL * dt_dL +
         (kBlackHoleRadius / (2.0f * r * r * f)) * dr * dr +
         r * (dtheta * dtheta + sin(theta) * sin(theta) * dphi * dphi);
     d2.y = -2.0f * dr * dtheta / r + sin(theta) * cos(theta) * dphi * dphi;
-    d2.z = -2.0f * dr * dphi / r - 2.0f * cos(theta) / (sin(theta)) * dtheta * dphi;
+    d2.z = -2.0f * dr * dphi / r - 2.0f * cos(theta) / sin(theta) * dtheta * dphi;
 }
 
+/* TODO: not Rk4? */
 void Rk4Step(inout Ray ray, float dL)
 {
     float3 k1a;
@@ -111,6 +122,20 @@ void main(uint3 id : SV_DispatchThreadID)
         if (ray.R <= kBlackHoleRadius)
         {
             outImage[id.xy] = float4(0.0f, 0.0f, 0.0f, 1.0f);
+            return;
+        }
+        /* TODO: store nearest object for the next iterations */
+        for (int i = 0; i < ObjectCount; i++)
+        {
+            if (distance(ray.Position, objects[i].Position) > objects[i].Radius)
+            {
+                continue;
+            }
+            float3 N = normalize(ray.Position - objects[i].Position);
+            float3 V = normalize(CameraPosition - ray.Position);
+            float ambient = 0.1f;
+            float intensity = ambient + (1.0f - ambient) * max(dot(N, V), 0.0f);
+            outImage[id.xy] = float4(objects[i].Color * intensity, 1.0f);
             return;
         }
         Rk4Step(ray, kLambda);

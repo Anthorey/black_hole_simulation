@@ -3,9 +3,6 @@
 #include <SDL3/SDL_main.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <imgui.h>
-#include <imgui_impl_sdl3.h>
-#include <imgui_impl_sdlgpu3.h>
 
 #include <algorithm>
 #include <cmath>
@@ -17,6 +14,10 @@
 static constexpr float kPan = 0.002f;
 static constexpr float kZoom = 25.0e9f;
 static constexpr float kFov = glm::radians<float>(60.0f);
+static constexpr float kC = 299792458.0f;
+static constexpr float kG = 6.67430e-11f;
+static constexpr float kBlackHoleMass = 8.54e36f; /* Sagittarius A */
+static constexpr float kBlackHoleRadius = 2.0f * kG * kBlackHoleMass / (kC * kC);
 
 struct UniformBuffer
 {
@@ -28,12 +29,22 @@ struct UniformBuffer
     float Padding0;
     glm::vec3 CameraForward;
     float Padding1;
+    uint32_t ObjectCount;
+};
+
+struct Object
+{
+    glm::vec3 Position;
+    float Radius;
+    glm::vec3 Color;
+    float Mass;
 };
 
 static SDL_Window* window;
 static SDL_GPUDevice* device;
 static SDL_GPUComputePipeline* geodesicPipeline;
 static SDL_GPUTexture* colorTexture;
+static SDL_GPUBuffer* objectBuffer;
 static float pitch;
 static float yaw;
 static float distance{1.0e11f};
@@ -71,19 +82,10 @@ static bool Init()
         SDL_Log("Failed to create swapchain: %s", SDL_GetError());
         return false;
     }
-    {
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGui_ImplSDL3_InitForSDLGPU(window);
-        ImGui_ImplSDLGPU3_InitInfo info{};
-        info.Device = device;
-        info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
-        ImGui_ImplSDLGPU3_Init(&info);
-    }
     geodesicPipeline = LoadComputePipeline(device, "geodesic.comp");
     if (!geodesicPipeline)
     {
-        SDL_Log("Failed to create geodesic pipeline");
+        SDL_Log("Failed to create pipeline");
         return false;
     }
     {
@@ -98,10 +100,66 @@ static bool Init()
         colorTexture = SDL_CreateGPUTexture(device, &info);
         if (!colorTexture)
         {
-            SDL_Log("Failed to create color texture: %s", SDL_GetError());
+            SDL_Log("Failed to create texture: %s", SDL_GetError());
             return false;
         }
     }
+    SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(device);
+    if (!commandBuffer)
+    {
+        SDL_Log("Failed to acquire command buffer: %s", SDL_GetError());
+        return false;
+    }
+    SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
+    if (!copyPass)
+    {
+        SDL_Log("Failed to begin copy pass: %s", SDL_GetError());
+        return false;
+    }
+    uniformBuffer.ObjectCount = 3;
+    SDL_GPUTransferBuffer* transferBuffer;
+    {
+        SDL_GPUTransferBufferCreateInfo info{};
+        info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+        info.size = uniformBuffer.ObjectCount * sizeof(Object);
+        transferBuffer = SDL_CreateGPUTransferBuffer(device, &info);
+        if (!transferBuffer)
+        {
+            SDL_Log("Failed to create transfer buffer: %s", SDL_GetError());
+            return false;
+        }
+    }
+    Object* objects = static_cast<Object*>(SDL_MapGPUTransferBuffer(device, transferBuffer, false));
+    if (!objects)
+    {
+        SDL_Log("Failed to map transfer buffer: %s", SDL_GetError());
+        return false;
+    }
+    objects[0] = {{4e11f, 0.0f, 0.0f}, 4e10f, {1, 1, 0}, 1.98892e30f};
+    objects[1] = {{0.0f, 0.0f, 4e11f}, 4e10f, {1, 0, 0}, 1.98892e30f};
+    objects[2] = {{0.0f, 0.0f, 0.0f}, kBlackHoleRadius, {0, 0, 0}, kBlackHoleMass};
+    SDL_UnmapGPUTransferBuffer(device, transferBuffer);
+    {
+        SDL_GPUBufferCreateInfo info{};
+        info.usage = SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_READ;
+        info.size = uniformBuffer.ObjectCount * sizeof(Object);
+        objectBuffer = SDL_CreateGPUBuffer(device, &info);
+        if (!objectBuffer)
+        {
+            SDL_Log("Failed to create buffer: %s", SDL_GetError());
+            return false;
+        }
+    }
+    {
+        SDL_GPUTransferBufferLocation location{};
+        SDL_GPUBufferRegion region{};
+        location.transfer_buffer = transferBuffer;
+        region.buffer = objectBuffer;
+        region.size = uniformBuffer.ObjectCount * sizeof(Object);
+        SDL_UploadToGPUBuffer(copyPass, &location, &region, false);
+    }
+    SDL_EndGPUCopyPass(copyPass);
+    SDL_SubmitGPUCommandBuffer(commandBuffer);
     return true;
 }
 
@@ -154,6 +212,7 @@ static void Draw()
         int groupsY = (HEIGHT + THREADS - 1) / THREADS;
         SDL_BindGPUComputePipeline(computePass, geodesicPipeline);
         SDL_PushGPUComputeUniformData(commandBuffer, 0, &uniformBuffer, sizeof(uniformBuffer));
+        SDL_BindGPUComputeStorageBuffers(computePass, 0, &objectBuffer, 1);
         SDL_DispatchGPUCompute(computePass, groupsX, groupsY, 1);
         SDL_EndGPUComputePass(computePass);
     }
@@ -211,7 +270,6 @@ int main(int argc, char** argv)
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
-            ImGui_ImplSDL3_ProcessEvent(&event);
             switch (event.type)
             {
             case SDL_EVENT_MOUSE_WHEEL:
@@ -233,9 +291,7 @@ int main(int argc, char** argv)
         Draw();
     }
     SDL_HideWindow(window);
-    ImGui_ImplSDLGPU3_Shutdown();
-    ImGui_ImplSDL3_Shutdown();
-    ImGui::DestroyContext();
+    SDL_ReleaseGPUBuffer(device, objectBuffer);
     SDL_ReleaseGPUTexture(device, colorTexture);
     SDL_ReleaseGPUComputePipeline(device, geodesicPipeline);
     SDL_ReleaseWindowFromGPUDevice(device, window);

@@ -13,19 +13,8 @@ make_directory(${BINARY_DIR})
 set(GLM_BUILD_LIBRARY OFF)
 add_subdirectory(SDL)
 add_subdirectory(glm)
-add_executable(black_hole_simulation WIN32
-    imgui/imgui.cpp
-    imgui/imgui_demo.cpp
-    imgui/imgui_draw.cpp
-    imgui/imgui_impl_sdl3.cpp
-    imgui/imgui_impl_sdlgpu3.cpp
-    imgui/imgui_tables.cpp
-    imgui/imgui_widgets.cpp
-    main.cpp
-    shader.cpp
-)
+add_executable(black_hole_simulation WIN32 main.cpp shader.cpp)
 set_target_properties(black_hole_simulation PROPERTIES CXX_STANDARD 23)
-target_include_directories(black_hole_simulation PRIVATE imgui)
 target_link_libraries(black_hole_simulation PRIVATE SDL3::SDL3 glm)
 
 function(add_shader FILE)
