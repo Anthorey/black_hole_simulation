@@ -90,8 +90,7 @@ void GeodesicRHS(Ray ray, out float3 d1, out float3 d2)
     d2.z = -2.0f * dr * dphi / r - 2.0f * cos(theta) / sin(theta) * dtheta * dphi;
 }
 
-/* TODO: not Rk4? */
-void Rk4Step(inout Ray ray, float dL)
+void Step(inout Ray ray, float dL)
 {
     float3 k1a;
     float3 k1b;
@@ -118,6 +117,7 @@ void main(uint3 id : SV_DispatchThreadID)
     float v = (1.0f - 2.0f * (id.y + 0.5f) / HEIGHT) * TanHalfFov;
     float3 direction = normalize(u * CameraRight - v * CameraUp + CameraForward);
     Ray ray = CreateRay(CameraPosition, direction);
+    float nearest = 0.0f;
     for (int i = 0; i < kSteps; i++)
     {
         if (ray.R <= kBlackHoleRadius)
@@ -126,29 +126,33 @@ void main(uint3 id : SV_DispatchThreadID)
             return;
         }
         float3 position = ray.Position;
-        Rk4Step(ray, kLambda);
-        if (position.y * ray.Position.y < 0.0f)
+        Step(ray, kLambda);
+        nearest -= distance(position, ray.Position);
+        float r = length(float2(ray.Position.x, ray.Position.z));
+        if (position.y * ray.Position.y < 0.0f && r >= DiskR1 && r <= DiskR2)
         {
-            float r = length(float2(ray.Position.x, ray.Position.z));
-            if (r >= DiskR1 && r <= DiskR2)
+            r = length(ray.Position) / DiskR2;
+            outImage[id.xy] = float4(1.0f, r, 0.2f, r);
+            return;
+        }
+        if (nearest < 0.0f)
+        {
+            nearest = kEscape;
+            for (int i = 0; i < ObjectCount; i++)
             {
-                r = length(ray.Position) / DiskR2;
-                outImage[id.xy] = float4(1.0f, r, 0.2f, r);
+                float d = distance(ray.Position, objects[i].Position) - objects[i].Radius;
+                nearest = min(nearest, d);
+                if (d > 0.0f)
+                {
+                    continue;
+                }
+                float3 N = normalize(ray.Position - objects[i].Position);
+                float3 V = normalize(CameraPosition - ray.Position);
+                float ambient = 0.1f;
+                float intensity = ambient + (1.0f - ambient) * max(dot(N, V), 0.0f);
+                outImage[id.xy] = float4(objects[i].Color * intensity, 1.0f);
                 return;
             }
-        }
-        for (int i = 0; i < ObjectCount; i++)
-        {
-            if (distance(ray.Position, objects[i].Position) > objects[i].Radius)
-            {
-                continue;
-            }
-            float3 N = normalize(ray.Position - objects[i].Position);
-            float3 V = normalize(CameraPosition - ray.Position);
-            float ambient = 0.1f;
-            float intensity = ambient + (1.0f - ambient) * max(dot(N, V), 0.0f);
-            outImage[id.xy] = float4(objects[i].Color * intensity, 1.0f);
-            return;
         }
         if (ray.R > kEscape)
         {

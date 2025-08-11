@@ -259,28 +259,23 @@ int main(int argc, char** argv)
     {
         return 1;
     }
-    uint64_t time2 = SDL_GetTicks();
-    uint64_t time1 = time2;
     bool running = true;
     while (running)
     {
-        time2 = SDL_GetTicks();
-        float delta = time2 - time1;
-        time1 = time2;
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
             switch (event.type)
             {
             case SDL_EVENT_MOUSE_WHEEL:
-                distance = std::max(1.0f, distance - event.wheel.y * kZoom * delta);
+                distance = std::max(1.0f, distance - event.wheel.y * kZoom);
                 break;
             case SDL_EVENT_MOUSE_MOTION:
                 if (event.motion.state & SDL_BUTTON_LMASK)
                 {
                     static constexpr float kClamp = glm::pi<float>() / 2.0f - 0.01f;
-                    yaw += event.motion.xrel * kPan * delta;
-                    pitch = std::clamp(pitch - event.motion.yrel * kPan * delta, -kClamp, kClamp);
+                    yaw += event.motion.xrel * kPan;
+                    pitch = std::clamp(pitch + event.motion.yrel * kPan, -kClamp, kClamp);
                 }
                 break;
             case SDL_EVENT_QUIT:
