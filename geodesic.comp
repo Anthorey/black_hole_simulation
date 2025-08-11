@@ -53,30 +53,43 @@ Ray CreateRay(float3 position, float3 direction)
     ray.Dphi = (-sin(ray.Phi) * dx + cos(ray.Phi) * dy) / (ray.R * sin(ray.Theta));
     ray.L = ray.R * ray.R * sin(ray.Theta) * ray.Dphi;
     float f = 1.0f - kBlackHoleRadius / ray.R;
-    float dL =
+    float dt_dL =
         sqrt((ray.Dr * ray.Dr) / f +
         ray.R * ray.R * (ray.Dtheta * ray.Dtheta +
         sin(ray.Theta) * sin(ray.Theta) * ray.Dphi * ray.Dphi));
-    ray.E = f * dL;
+    ray.E = f * dt_dL;
     return ray;
+}
+
+void GeodesicRHS(Ray ray, out float3 d1, out float3 d2)
+{
+    float r = ray.R;
+    float theta = ray.Theta;
+    float dr = ray.Dr;
+    float dtheta = ray.Dtheta;
+    float dphi = ray.Dphi;
+    float f = 1.0f - kBlackHoleRadius / r;
+    float dt_dL = ray.E / f;
+    d1 = float3(dr, dtheta, dphi);
+    d2.x =
+        -(kBlackHoleRadius / (2.0f * r * r)) * f * dt_dL * dt_dL +
+        (kBlackHoleRadius / (2.0f * r * r * f)) * dr * dr +
+        r * (dtheta * dtheta + sin(theta) * sin(theta) * dphi * dphi);
+    d2.y = -2.0f * dr * dtheta / r + sin(theta) * cos(theta) * dphi * dphi;
+    d2.z = -2.0f * dr * dphi / r - 2.0f * cos(theta) / (sin(theta)) * dtheta * dphi;
 }
 
 void Rk4Step(inout Ray ray, float dL)
 {
-    float3 k1a = CameraForward;
-    float3 k1b = CameraForward;
-
-    // float3 k1a;
-    // float3 k1b;
-    // GeodesicRHS(ray, k1a, k1b);
-
-    ray.R      += dL * k1a.x;
-    ray.Theta  += dL * k1a.y;
-    ray.Phi    += dL * k1a.z;
-    ray.Dr     += dL * k1b.x;
+    float3 k1a;
+    float3 k1b;
+    GeodesicRHS(ray, k1a, k1b);
+    ray.R += dL * k1a.x;
+    ray.Theta += dL * k1a.y;
+    ray.Phi += dL * k1a.z;
+    ray.Dr += dL * k1b.x;
     ray.Dtheta += dL * k1b.y;
-    ray.Dphi   += dL * k1b.z;
-
+    ray.Dphi += dL * k1b.z;
     ray.Position.x = ray.R * sin(ray.Theta) * cos(ray.Phi);
     ray.Position.y = ray.R * sin(ray.Theta) * sin(ray.Phi);
     ray.Position.z = ray.R * cos(ray.Theta);
@@ -95,14 +108,12 @@ void main(uint3 id : SV_DispatchThreadID)
     Ray ray = CreateRay(CameraPosition, direction);
     for (int i = 0; i < kSteps; i++)
     {
-        // if (ray.R <= kBlackHoleRadius)
-        if (length(ray.Position) <= kBlackHoleRadius)
+        if (ray.R <= kBlackHoleRadius)
         {
             outImage[id.xy] = float4(0.0f, 0.0f, 0.0f, 1.0f);
             return;
         }
-        // Rk4Step(ray, kLambda);
-        ray.Position += direction * kLambda;
+        Rk4Step(ray, kLambda);
     }
     outImage[id.xy] = float4(1.0f, 1.0f, 1.0f, 1.0f);
 }

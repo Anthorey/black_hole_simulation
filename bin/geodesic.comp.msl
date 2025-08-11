@@ -15,51 +15,108 @@ struct type_UniformBuffer
     float Padding1;
 };
 
+constant float3 _327 = {};
+
 kernel void main0(constant type_UniformBuffer& UniformBuffer [[buffer(0)]], texture2d<float, access::write> outImage [[texture(0)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
 {
     do
     {
-        bool _58;
-        if (!(gl_GlobalInvocationID.x >= 960u))
+        bool _358;
+        if (!(gl_GlobalInvocationID.x >= 240u))
         {
-            _58 = gl_GlobalInvocationID.y >= 720u;
+            _358 = gl_GlobalInvocationID.y >= 180u;
         }
         else
         {
-            _58 = true;
+            _358 = true;
         }
-        if (_58)
+        if (_358)
         {
             break;
         }
-        float3 _88 = fast::normalize(((float3(UniformBuffer.CameraRight) * (((((float(gl_GlobalInvocationID.x) + 0.5) * 0.00208333344198763370513916015625) - 1.0) * UniformBuffer.Aspect) * UniformBuffer.TanHalfFov)) - (float3(UniformBuffer.CameraUp) * ((1.0 - ((float(gl_GlobalInvocationID.y) + 0.5) * 0.00277777784503996372222900390625)) * UniformBuffer.TanHalfFov))) + float3(UniformBuffer.CameraForward));
-        float3 _92;
-        _92 = float3(UniformBuffer.CameraPosition);
-        float3 _93;
-        bool _107;
-        int _95 = 0;
+        float3 _423 = fast::normalize(((float3(UniformBuffer.CameraRight) * (((((float(gl_GlobalInvocationID.x) + 0.5) * 0.008333333767950534820556640625) - 1.0) * UniformBuffer.Aspect) * UniformBuffer.TanHalfFov)) - (float3(UniformBuffer.CameraUp) * ((1.0 - ((float(gl_GlobalInvocationID.y) + 0.5) * 0.011111111380159854888916015625)) * UniformBuffer.TanHalfFov))) + float3(UniformBuffer.CameraForward));
+        float _437 = length(float3(UniformBuffer.CameraPosition));
+        float _445 = acos(UniformBuffer.CameraPosition[2] / _437);
+        float _453 = precise::atan2(UniformBuffer.CameraPosition[1], UniformBuffer.CameraPosition[0]);
+        float _457 = _423.x;
+        float _461 = _423.y;
+        float _465 = _423.z;
+        float _469 = sin(_445);
+        float _471 = cos(_453);
+        float _477 = sin(_453);
+        float _485 = cos(_445);
+        float _489 = (((_469 * _471) * _457) + ((_469 * _477) * _461)) + (_485 * _465);
+        float _507 = ((((_485 * _471) * _457) + ((_485 * _477) * _461)) - (_469 * _465)) / _437;
+        float _521 = (((-_477) * _457) + (_471 * _461)) / (_437 * _469);
+        float _525 = _437 * _437;
+        float _535 = 1.0 - (12689999872.0 / _437);
+        float _561 = _535 * sqrt(((_489 * _489) / _535) + (_525 * ((_507 * _507) + (((_469 * _469) * _521) * _521))));
+        float3 _604;
+        float3 _607;
+        _604 = _327;
+        _607 = float3(UniformBuffer.CameraPosition);
+        float3 _605;
+        float3 _608;
+        float _610;
+        float _612;
+        float _614;
+        float _616;
+        float _618;
+        float _620;
+        bool _843;
+        float _609 = _445;
+        float _611 = _453;
+        float _613 = _489;
+        float _615 = _507;
+        float _617 = _521;
+        float _619 = _437;
+        int _621 = 0;
         for (;;)
         {
-            if (_95 < 60000)
+            if (_621 < 60000)
             {
-                if (length(_92) <= 12689999872.0)
+                if (_619 <= 12689999872.0)
                 {
                     outImage.write(float4(0.0, 0.0, 0.0, 1.0), uint2(gl_GlobalInvocationID.xy));
-                    _107 = true;
+                    _843 = true;
                     break;
                 }
-                _93 = _92 + (_88 * 10000000.0);
-                _92 = _93;
-                _95++;
+                float _691 = 1.0 - (12689999872.0 / _619);
+                float _695 = _561 / _691;
+                float _707 = (2.0 * _619) * _619;
+                float _729 = sin(_609);
+                float _741 = ((((((-12689999872.0) / _707) * _691) * _695) * _695) + (((12689999872.0 / (_707 * _691)) * _613) * _613)) + (_619 * ((_615 * _615) + (((_729 * _729) * _617) * _617)));
+                float _743 = (-2.0) * _613;
+                float _749 = cos(_609);
+                float _757 = ((_743 * _615) / _619) + (((_729 * _749) * _617) * _617);
+                float _771 = ((_743 * _617) / _619) - ((((2.0 * _749) / _729) * _615) * _617);
+                _605 = float3(_741, _757, _771);
+                _620 = _619 + (10000000.0 * _613);
+                _610 = _609 + (10000000.0 * _615);
+                _612 = _611 + (10000000.0 * _617);
+                _614 = _613 + (10000000.0 * _741);
+                _616 = _615 + (10000000.0 * _757);
+                _618 = _617 + (10000000.0 * _771);
+                float _821 = _620 * sin(_610);
+                _608 = float3(_821 * cos(_612), _821 * sin(_612), _620 * cos(_610));
+                _604 = _605;
+                _607 = _608;
+                _609 = _610;
+                _611 = _612;
+                _613 = _614;
+                _615 = _616;
+                _617 = _618;
+                _619 = _620;
+                _621++;
                 continue;
             }
             else
             {
-                _107 = false;
+                _843 = false;
                 break;
             }
         }
-        if (_107)
+        if (_843)
         {
             break;
         }

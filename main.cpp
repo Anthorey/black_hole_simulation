@@ -54,10 +54,8 @@ static bool Init()
         SDL_Log("Failed to create window: %s", SDL_GetError());
         return false;
     }
-#if defined(SDL_PLATFORM_WIN32) && !defined(NDEBUG)
-    device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
-#elif defined(SDL_PLATFORM_WIN32) && defined(NDEBUG)
-    device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_DXIL, true, nullptr);
+#if defined(SDL_PLATFORM_WIN32)
+    device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, false, nullptr);
 #elif defined(SDL_PLATFORM_APPLE)
     device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_MSL, true, nullptr);
 #else
