@@ -7,10 +7,10 @@ cbuffer UniformBuffer : register(b0, space2)
     float3 CameraRight;
     float Aspect;
     float3 CameraUp;
-    float Padding0;
-    float3 CameraForward;
-    float Padding1;
     uint ObjectCount;
+    float3 CameraForward;
+    float DiskR1;
+    float DiskR2;
 };
 
 struct Ray
@@ -41,6 +41,7 @@ StructuredBuffer<Object> objects : register(t0, space0);
 static const float kBlackHoleRadius = 1.269e10f; /* Sagittarius A */
 static const float kLambda = 1.0e7f;
 static const int kSteps = 60000;
+static const float kEscape = 1.0e30f;
 
 Ray CreateRay(float3 position, float3 direction)
 {
@@ -124,7 +125,18 @@ void main(uint3 id : SV_DispatchThreadID)
             outImage[id.xy] = float4(0.0f, 0.0f, 0.0f, 1.0f);
             return;
         }
-        /* TODO: store nearest object for the next iterations */
+        float3 position = ray.Position;
+        Rk4Step(ray, kLambda);
+        if (position.y * ray.Position.y < 0.0f)
+        {
+            float r = length(float2(ray.Position.x, ray.Position.z));
+            if (r >= DiskR1 && r <= DiskR2)
+            {
+                r = length(ray.Position) / DiskR2;
+                outImage[id.xy] = float4(1.0f, r, 0.2f, r);
+                return;
+            }
+        }
         for (int i = 0; i < ObjectCount; i++)
         {
             if (distance(ray.Position, objects[i].Position) > objects[i].Radius)
@@ -138,7 +150,10 @@ void main(uint3 id : SV_DispatchThreadID)
             outImage[id.xy] = float4(objects[i].Color * intensity, 1.0f);
             return;
         }
-        Rk4Step(ray, kLambda);
+        if (ray.R > kEscape)
+        {
+            break;
+        }
     }
-    outImage[id.xy] = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    outImage[id.xy] = float4(0.0f, 0.0f, 0.0f, 0.0f);
 }

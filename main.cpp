@@ -26,10 +26,10 @@ struct UniformBuffer
     glm::vec3 CameraRight;
     float Aspect;
     glm::vec3 CameraUp;
-    float Padding0;
-    glm::vec3 CameraForward;
-    float Padding1;
     uint32_t ObjectCount;
+    glm::vec3 CameraForward;
+    float DiskR1 = kBlackHoleRadius * 2.2f;
+    float DiskR2 = kBlackHoleRadius * 5.2f;
 };
 
 struct Object

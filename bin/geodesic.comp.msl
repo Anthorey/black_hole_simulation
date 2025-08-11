@@ -10,10 +10,10 @@ struct type_UniformBuffer
     packed_float3 CameraRight;
     float Aspect;
     packed_float3 CameraUp;
-    float Padding0;
-    packed_float3 CameraForward;
-    float Padding1;
     uint ObjectCount;
+    packed_float3 CameraForward;
+    float DiskR1;
+    float DiskR2;
 };
 
 struct Object
@@ -29,142 +29,170 @@ struct type_StructuredBuffer_Object
     Object _m0[1];
 };
 
-constant float3 _382 = {};
+constant float3 _405 = {};
 
 kernel void main0(constant type_UniformBuffer& UniformBuffer [[buffer(0)]], const device type_StructuredBuffer_Object& objects [[buffer(1)]], texture2d<float, access::write> outImage [[texture(0)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
 {
     do
     {
-        bool _413;
-        if (!(gl_GlobalInvocationID.x >= 200u))
+        bool _437;
+        if (!(gl_GlobalInvocationID.x >= 100u))
         {
-            _413 = gl_GlobalInvocationID.y >= 150u;
+            _437 = gl_GlobalInvocationID.y >= 75u;
         }
         else
         {
-            _413 = true;
+            _437 = true;
         }
-        if (_413)
+        if (_437)
         {
             break;
         }
-        float3 _478 = fast::normalize(((float3(UniformBuffer.CameraRight) * (((((float(gl_GlobalInvocationID.x) + 0.5) * 0.00999999977648258209228515625) - 1.0) * UniformBuffer.Aspect) * UniformBuffer.TanHalfFov)) - (float3(UniformBuffer.CameraUp) * ((1.0 - ((float(gl_GlobalInvocationID.y) + 0.5) * 0.01333333365619182586669921875)) * UniformBuffer.TanHalfFov))) + float3(UniformBuffer.CameraForward));
-        float _492 = length(float3(UniformBuffer.CameraPosition));
-        float _500 = acos(UniformBuffer.CameraPosition[2] / _492);
-        float _508 = precise::atan2(UniformBuffer.CameraPosition[1], UniformBuffer.CameraPosition[0]);
-        float _512 = _478.x;
-        float _516 = _478.y;
-        float _520 = _478.z;
-        float _524 = sin(_500);
-        float _526 = cos(_508);
-        float _532 = sin(_508);
-        float _540 = cos(_500);
-        float _544 = (((_524 * _526) * _512) + ((_524 * _532) * _516)) + (_540 * _520);
-        float _562 = ((((_540 * _526) * _512) + ((_540 * _532) * _516)) - (_524 * _520)) / _492;
-        float _576 = (((-_532) * _512) + (_526 * _516)) / (_492 * _524);
-        float _580 = _492 * _492;
-        float _590 = 1.0 - (12689999872.0 / _492);
-        float _616 = _590 * sqrt(((_544 * _544) / _590) + (_580 * ((_562 * _562) + (((_524 * _524) * _576) * _576))));
-        float3 _659;
-        float3 _662;
-        _659 = _382;
-        _662 = float3(UniformBuffer.CameraPosition);
-        float3 _660;
-        float3 _663;
-        float _665;
-        float _667;
-        float _669;
-        float _671;
-        float _673;
-        float _677;
-        bool _675;
-        bool _986;
-        float _664 = _500;
-        float _666 = _508;
-        float _668 = _544;
-        float _670 = _562;
-        float _672 = _576;
-        bool _674 = false;
-        float _676 = _492;
-        int _678 = 0;
+        float3 _502 = fast::normalize(((float3(UniformBuffer.CameraRight) * (((((float(gl_GlobalInvocationID.x) + 0.5) * 0.0199999995529651641845703125) - 1.0) * UniformBuffer.Aspect) * UniformBuffer.TanHalfFov)) - (float3(UniformBuffer.CameraUp) * ((1.0 - ((float(gl_GlobalInvocationID.y) + 0.5) * 0.0266666673123836517333984375)) * UniformBuffer.TanHalfFov))) + float3(UniformBuffer.CameraForward));
+        float _516 = length(float3(UniformBuffer.CameraPosition));
+        float _524 = acos(UniformBuffer.CameraPosition[2] / _516);
+        float _532 = precise::atan2(UniformBuffer.CameraPosition[1], UniformBuffer.CameraPosition[0]);
+        float _536 = _502.x;
+        float _540 = _502.y;
+        float _544 = _502.z;
+        float _548 = sin(_524);
+        float _550 = cos(_532);
+        float _556 = sin(_532);
+        float _564 = cos(_524);
+        float _568 = (((_548 * _550) * _536) + ((_548 * _556) * _540)) + (_564 * _544);
+        float _586 = ((((_564 * _550) * _536) + ((_564 * _556) * _540)) - (_548 * _544)) / _516;
+        float _600 = (((-_556) * _536) + (_550 * _540)) / (_516 * _548);
+        float _604 = _516 * _516;
+        float _614 = 1.0 - (12689999872.0 / _516);
+        float _640 = _614 * sqrt(((_568 * _568) / _614) + (_604 * ((_586 * _586) + (((_548 * _548) * _600) * _600))));
+        float3 _683;
+        float3 _686;
+        _683 = _405;
+        _686 = float3(UniformBuffer.CameraPosition);
+        float3 _684;
+        float3 _687;
+        float _691;
+        float _693;
+        float _695;
+        float _697;
+        float _699;
+        float _701;
+        bool _689;
+        bool _1076;
+        bool _688 = false;
+        float _690 = _524;
+        float _692 = _532;
+        float _694 = _568;
+        float _696 = _586;
+        float _698 = _600;
+        float _700 = _516;
+        int _702 = 0;
         for (;;)
         {
-            if (_678 < 60000)
+            if (_702 < 60000)
             {
-                if (_676 <= 12689999872.0)
+                if (_700 <= 12689999872.0)
                 {
                     outImage.write(float4(0.0, 0.0, 0.0, 1.0), uint2(gl_GlobalInvocationID.xy));
-                    _986 = true;
+                    _1076 = true;
                     break;
                 }
-                int _719 = 0;
-                uint _724;
+                float _774 = 1.0 - (12689999872.0 / _700);
+                float _778 = _640 / _774;
+                float _790 = (2.0 * _700) * _700;
+                float _812 = sin(_690);
+                float _824 = ((((((-12689999872.0) / _790) * _774) * _778) * _778) + (((12689999872.0 / (_790 * _774)) * _694) * _694)) + (_700 * ((_696 * _696) + (((_812 * _812) * _698) * _698)));
+                float _826 = (-2.0) * _694;
+                float _832 = cos(_690);
+                float _840 = ((_826 * _696) / _700) + (((_812 * _832) * _698) * _698);
+                float _854 = ((_826 * _698) / _700) - ((((2.0 * _832) / _812) * _696) * _698);
+                _684 = float3(_824, _840, _854);
+                _701 = _700 + (10000000.0 * _694);
+                _691 = _690 + (10000000.0 * _696);
+                _693 = _692 + (10000000.0 * _698);
+                _695 = _694 + (10000000.0 * _824);
+                _697 = _696 + (10000000.0 * _840);
+                _699 = _698 + (10000000.0 * _854);
+                float _904 = _701 * sin(_691);
+                float _908 = _904 * cos(_693);
+                float _912 = _904 * sin(_693);
+                float _916 = _701 * cos(_691);
+                _687 = float3(_908, _912, _916);
+                if ((_686.y * _912) < 0.0)
+                {
+                    float _934 = length(float2(_908, _916));
+                    bool _954;
+                    if (_934 >= UniformBuffer.DiskR1)
+                    {
+                        _954 = _934 <= UniformBuffer.DiskR2;
+                    }
+                    else
+                    {
+                        _954 = false;
+                    }
+                    if (_954)
+                    {
+                        float _966 = length(_687) / UniformBuffer.DiskR2;
+                        outImage.write(float4(1.0, _966, 0.20000000298023223876953125, _966), uint2(gl_GlobalInvocationID.xy));
+                        _1076 = true;
+                        break;
+                    }
+                }
+                int _982 = 0;
+                uint _987;
                 for (;;)
                 {
-                    _724 = uint(_719);
-                    if (_724 < UniformBuffer.ObjectCount)
+                    _987 = uint(_982);
+                    if (_987 < UniformBuffer.ObjectCount)
                     {
-                        if (distance(_662, float3(objects._m0[_724].Position)) > objects._m0[_724].Radius)
+                        if (distance(_687, float3(objects._m0[_987].Position)) > objects._m0[_987].Radius)
                         {
-                            _719++;
+                            _982++;
                             continue;
                         }
-                        outImage.write(float4(float3(objects._m0[_724].Color) * (0.100000001490116119384765625 + (0.89999997615814208984375 * precise::max(dot(fast::normalize(_662 - float3(objects._m0[_724].Position)), fast::normalize(float3(UniformBuffer.CameraPosition) - _662)), 0.0))), 1.0), uint2(gl_GlobalInvocationID.xy));
-                        _675 = true;
+                        outImage.write(float4(float3(objects._m0[_987].Color) * (0.100000001490116119384765625 + (0.89999997615814208984375 * precise::max(dot(fast::normalize(_687 - float3(objects._m0[_987].Position)), fast::normalize(float3(UniformBuffer.CameraPosition) - _687)), 0.0))), 1.0), uint2(gl_GlobalInvocationID.xy));
+                        _689 = true;
                         break;
                     }
                     else
                     {
-                        _675 = _674;
+                        _689 = _688;
                         break;
                     }
                 }
-                if (_675)
+                if (_689)
                 {
-                    _986 = _675;
+                    _1076 = _689;
                     break;
                 }
-                float _834 = 1.0 - (12689999872.0 / _676);
-                float _838 = _616 / _834;
-                float _850 = (2.0 * _676) * _676;
-                float _872 = sin(_664);
-                float _884 = ((((((-12689999872.0) / _850) * _834) * _838) * _838) + (((12689999872.0 / (_850 * _834)) * _668) * _668)) + (_676 * ((_670 * _670) + (((_872 * _872) * _672) * _672)));
-                float _886 = (-2.0) * _668;
-                float _892 = cos(_664);
-                float _900 = ((_886 * _670) / _676) + (((_872 * _892) * _672) * _672);
-                float _914 = ((_886 * _672) / _676) - ((((2.0 * _892) / _872) * _670) * _672);
-                _660 = float3(_884, _900, _914);
-                _677 = _676 + (10000000.0 * _668);
-                _665 = _664 + (10000000.0 * _670);
-                _667 = _666 + (10000000.0 * _672);
-                _669 = _668 + (10000000.0 * _884);
-                _671 = _670 + (10000000.0 * _900);
-                _673 = _672 + (10000000.0 * _914);
-                float _964 = _677 * sin(_665);
-                _663 = float3(_964 * cos(_667), _964 * sin(_667), _677 * cos(_665));
-                _659 = _660;
-                _662 = _663;
-                _664 = _665;
-                _666 = _667;
-                _668 = _669;
-                _670 = _671;
-                _672 = _673;
-                _674 = _675;
-                _676 = _677;
-                _678++;
+                if (_701 > 1000000015047466219876688855040.0)
+                {
+                    _1076 = _689;
+                    break;
+                }
+                _683 = _684;
+                _686 = _687;
+                _688 = _689;
+                _690 = _691;
+                _692 = _693;
+                _694 = _695;
+                _696 = _697;
+                _698 = _699;
+                _700 = _701;
+                _702++;
                 continue;
             }
             else
             {
-                _986 = _674;
+                _1076 = _688;
                 break;
             }
         }
-        if (_986)
+        if (_1076)
         {
             break;
         }
-        outImage.write(float4(1.0), uint2(gl_GlobalInvocationID.xy));
+        outImage.write(float4(0.0), uint2(gl_GlobalInvocationID.xy));
         break;
     } while(false);
 }
