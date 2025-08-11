@@ -235,7 +235,7 @@ static void Draw()
             letterboxX = (width - letterboxW) / 2.0f;
             letterboxY = 0.0f;
         }
-        SDL_FColor clearColor = {0.02f, 0.02f, 0.02f, 1.0f};
+        SDL_FColor clearColor = {0.04f, 0.04f, 0.04f, 1.0f};
         SDL_GPUBlitInfo info{};
         info.load_op = SDL_GPU_LOADOP_CLEAR;
         info.clear_color = clearColor;

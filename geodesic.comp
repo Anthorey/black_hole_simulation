@@ -159,5 +159,5 @@ void main(uint3 id : SV_DispatchThreadID)
             break;
         }
     }
-    outImage[id.xy] = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    outImage[id.xy] = float4(0.02f, 0.02f, 0.02f, 1.0f);
 }

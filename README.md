@@ -1,5 +1,7 @@
 # Black Hole Simulation
 
+![](image.png)
+
 Black Hole Simulation using SDL3 GPU with compute shaders
 
 ### Building
