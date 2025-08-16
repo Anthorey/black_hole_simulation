@@ -175,7 +175,7 @@ static void Draw()
     SDL_GPUTexture* swapchainTexture;
     uint32_t width;
     uint32_t height;
-    if (!SDL_AcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, &width, &height))
+    if (!SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, &width, &height))
     {
         SDL_Log("Failed to acquire swapchain texture: %s", SDL_GetError());
         SDL_CancelGPUCommandBuffer(commandBuffer);
